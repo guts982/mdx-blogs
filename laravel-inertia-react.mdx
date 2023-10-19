@@ -1,0 +1,256 @@
+---
+title: 'Laravel 10 with Inertiajs, React and Vite'
+date: '2023-10-20'
+tags: ['Laravel','vite','reactjs', 'inertiajs']
+author: Amit Karn
+coverImage: https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/laravel-inertia-react/cover.webp
+description: A comprehensive tutorial on how to setup up basic laravel and reactjs project glued with inertiajs in a vite build system.
+---
+## Prerequisites
+
+You should have ***php (^8.1)*** , ***composer***, and ***node (^18)*** installed on your system. This tutorial is for windows only.
+
+Basic inertia setup with laravel is already well documented at their official site that you can visit here ***[inertia-server-setup]([inertia-client-setup](https://inertiajs.com/server-side-setup))***  and  ***[inertia-client-setup](https://inertiajs.com/client-side-setup)***. But still, it somehow doesn't feel properly documented or perhaps outdated for ***react*** , and is heavily tilted towards its ***vue*** developers.
+
+## Server Side Setup
+
+### Install Laravel
+
+Open your project directory, open command line terminal execute:
+
+<CustomCode>
+```bash
+composer create-project laravel/laravel laravel-app
+# or if you have laravel installer installed
+laravel new laravel-app
+```
+</CustomCode>
+
+Then lets jump into the code with any editor.
+
+### Install inertiajs/inertia-laravel
+
+<CustomCode>
+```bash
+composer require inertiajs/inertia-laravel
+```
+</CustomCode>
+
+### Inertia Middleware Setup
+
+<CustomCode>
+```bash
+php artisan inertia:middleware
+```
+</CustomCode>
+
+Register the middleware in ***App\Http\Kernel.***
+
+<CustomCode>
+```php
+'web' => [
+    // ...
+    \App\Http\Middleware\HandleInertiaRequests::class,
+],
+```
+</CustomCode>
+
+### Root Template
+
+Following the conventions of inertia, we shall rename the default ***welcome.blade.php***  with ***app.blade.php*** . A also replace the contents inside with:
+
+<CustomCode>
+```php
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>{{ config('app.name') }}</title>
+        @viteReactRefresh 
+        @vite(['resources/js/app.jsx', 'resources/css/app.css'])
+        @inertiaHead
+
+    </head>
+    <body class="antialiased">
+        @inertia
+    </body>
+</html>
+```
+</CustomCode>
+
+Notice we have directives like ***@viteReactRefresh*** and ***app.jsx*** file which does not exist yet.
+
+### Creating Responses
+
+For this tutorial, lets work with a category model,
+
+<CustomCode>
+```bash
+php artisan make:model Category -a
+```
+</CustomCode>
+
+Now, you can edit your migrations, and models according to your needs, we'll just look into the controller ***App\Http\Controllers\CategoryController***  here.
+
+<CustomCode>
+```php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Category;
+use App\Http\Requests\StoreCategoryRequest;
+use App\Http\Requests\UpdateCategoryRequest;
+
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
+
+class CategoryController extends Controller
+{
+   /**
+    * Display a listing of the resource.
+    */
+    public function index() : InertiaResponse
+    {
+        $categories = Category::select('id', 'slug', 'name',  'description')
+                                ->get()
+                                ->toArray();
+                      
+        return Inertia::render('Category/Index', [
+            'categories' =>  $categories,
+        ]);
+    }
+}
+```
+</CustomCode>
+
+## Client Side Setup
+
+### Install dependencies
+
+<CustomCode>
+```bash
+npm install @inertiajs/react @inertiajs/inertia-react @vitejs/plugin-react react react-dom
+```
+</CustomCode>
+
+### Setup vite.config.js file
+
+<CustomCode>
+```js
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+    plugins: [
+        react(),
+        laravel({
+            input: ['resources/css/app.css', 'resources/js/app.jsx'],
+            refresh: true,
+        }),
+    ],
+    resolve: {
+        alias: {
+            '@': '/resources/js'
+        }
+    }
+})
+```
+</CustomCode>
+
+Here, we're simply attaching the vite plugin for react, as well as laravel with some arguments. Also, optionally we can create an alias which is super helpful for JS projects. 
+
+
+### Create Page Component
+
+Create the index file for displaying all our categories inside ***resources/js/Pages/Category/Index.jsx.***
+
+<CustomCode>
+```js
+import { usePage } from '@inertiajs/react'
+
+export default () => {
+    const { categories } = usePage().props
+    return (
+        <div
+            style={{
+                width: '100vw',
+                height: '100vh',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                flexDirection: 'column'
+            }}
+        >
+            <h2>Categories</h2>
+            <table border={1}>
+                <thead>
+                <tr>
+                    <th>ID.</th>
+                    <th>Name.</th>
+                    <th>Description.</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {categories.map(cat => (
+                        <tr key={cat.slug}>
+                            <td>{cat.id}</td>
+                            <td>{cat.name}</td>
+                            <td>{cat.description}</td>
+                        </tr>
+                    ))}
+                 </tbody>
+            </table>
+        </div>
+    )
+}
+```
+</CustomCode>
+
+We use ***usePage()*** hook to retrieve data sent from controllers, and there is also ***useForm()* **hook to post data to the server, you can check more of these props in the  ***[inertiajs docs](https://inertiajs.com/forms)***.
+
+### Initialize the Inertia app
+
+Rename the ***app.js*** inside ***resources/js/app.js*** to ***app.jsx***  and replace it's content with following.
+
+<CustomCode>
+```js
+import React from 'react'
+import {createRoot} from 'react-dom/client'
+import {createInertiaApp } from '@inertiajs/react'
+import {resolvePageComponent} from 'laravel-vite-plugin/inertia-helpers'
+
+createInertiaApp({
+    id:'app',
+    resolve: (name) => resolvePageComponent(`./Pages/${name}.jsx`,import.meta.glob('./Pages/**/*.jsx')),
+    setup({ el, App, props }) {
+        createRoot(el).render(<App {...props} />)
+    },
+})
+```
+</CustomCode>
+
+Now this is the main entry file instantiating our react app, which is kind of being glued inside the inertia wrapper, and inertia is only responsible for resolving the react pages components which is requested by the controllers in our backend. So, basically all these amazing packages and plugins for reactjs, inertiajs along with vite build system works together in unison, to provide us a smooth development experience.
+
+### Start the application
+
+To start a laravel + vite/inertia/react project, you can run these two commands simultaenously in two terminals.
+
+<CustomCode>
+```bash
+php artisan serve
+```
+</CustomCode>
+
+<CustomCode>
+```bash
+npm run dev
+```
+</CustomCode>
+
+That's it, visit [localhost:8000/categories](http://127.0.0.1:8000/categories) to checkout the app.
+<CustomImage src="https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/laravel-inertia-react/output.PNG" alt="output"   />
+
