@@ -15,15 +15,15 @@ There are two most common ways to connect to cpanel instance via ssh on windows:
 
 But in this article, we will only focus on connecting via WSL.  So first thing's first if you haven't already,
 
-**Install WSL** :
-If you haven't already installed WSL on your Windows machine, you can do so by following Microsoft's official documentation: [Install WSL on Windows](https://docs.microsoft.com/en-us/windows/wsl/install).
+#### Install WSL :
+If you haven't already installed WSL on your Windows machine, you can do so by following Microsoft's official documentation: *[Install WSL on Windows](https://docs.microsoft.com/en-us/windows/wsl/install)*.
 
-**Open WSL Terminal** :
+#### Open WSL Terminal :
 Open your WSL terminal by searching for it in the Windows Start menu or using your preferred terminal emulator (e.g., Windows Terminal).
 
 So that was the prerequisite for windows machine, now lets briefly look into what we're trying to achieve here.
 
-## **SSH ( Secure Shell )**
+## SSH ( Secure Shell )
 
 SSH is a cryptographic network protocol that is used to secure network communication and allow users to access and manage remote systems securely over a potentially unsecured network. SSH encrypts the data exchanged between the client and the server, providing confidentiality and integrity for the communication.
 
@@ -39,7 +39,7 @@ Public and private keys are fundamental to encrypted communications and play a p
 
 #### Generate public and private keys.
 
-Go to your search menu, and type and select*Windows Subsystem for Linux*. It will open the default wsl terminal with the ubuntu or any linux os that you installed with wsl.
+Go to your search menu, and type and select *Windows Subsystem for Linux*. It will open the default wsl terminal with the ubuntu or any linux os that you installed with wsl.
 
 {/* <!-- ![wsl](https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/cpanel-ssh-wsl/wsl.PNG) --> */}
 {/* <!-- ![wsl](./images/cpanel-ssh-wsl/wsl.PNG) --> */}
@@ -67,7 +67,7 @@ There will be prompts for file, which we can leave blank and press enter, and a 
 
 This will generate a  ***.ssh***  directory inside the ***home/`<username>/`*** or  ***home/~/* ** path. The ***.ssh*** will contain two files called  ***id_rsa***  (Private Key) and  *id_rsa.pub*  (Public Key).
 
-#### **Upload public key to the cpanel.**
+#### Upload public key to the cpanel.
 
 Now that we have got our public and private keys, we can upload our public key to the cpanel by following these steps.
 
@@ -91,7 +91,7 @@ Now that we have got our public and private keys, we can upload our public key t
 
 That's all you need to do in cpanel.
 
-#### **Attempt ssh connection.**
+#### Attempt ssh connection.
 
 Now finally we shall try to start our ssh connection from our local machine's wsl terminal.
 Type the following command in your wsl terminal:
@@ -111,4 +111,4 @@ The username and domain will ofcourse come from your cpanel.
 
 And there it is, your entire subdomains and public_html at your disposal, just a couple of commands away (from second time tho!).  
 
-Okay, that should do it, if you didn't fumble upon wrong passphrase, like I did, so always check and store those kind of entities, in a secure place of your liking. Bye Bye now.
+Okay, that should do it, if you didn't fumble upon wrong passphrase, like I did, so always check and store those kind of entities, in a secure place of your liking. 
