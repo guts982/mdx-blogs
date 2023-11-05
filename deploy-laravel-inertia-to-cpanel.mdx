@@ -1,0 +1,86 @@
+---
+title: 'Deploy Laravel Inertia React Typescript Vite project to cpanel'
+date: '2023-11-5'
+tags: ['cpanel','wsl','ssh','laravel','vite','reactjs','inertiajs','typescript']
+author: Amit Karn
+coverImage: https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/deploy-laravel-inertia-to-cpanel/cover.png
+description: Steps for deploying a laravel inertia react typescript vite project to cpanel.
+---
+In this example, I'm gonna create a new subdomain, but you can skip this if you wanna deploy to your root domain.
+
+## Accessing cpanel from browser
+
+* Open terminal by clicking on the option or via searchbox.
+* Create a subdomain and setup database.
+
+## Accessing cpanel from SSH
+
+* Read how to connect to cpanel via ssh [here](https://guts-blog-app.vercel.app/blogs/cpanel-ssh-wsl).
+* Once connected, you should have something like this.
+
+{/* <!-- ![ssh-access](images/deploy-laravel-inertia-to-cpanel/ssh-access.png) --> */}
+<CustomImage src="https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/deploy-laravel-inertia-to-cpanel/ssh-access.PNG" alt="ssh-access" />
+As shown in image above, cd into a subdomain directory, or public_html, and then perform the following steps.
+
+Clone your laravel source code into this directory.
+<CustomImage src="https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/deploy-laravel-inertia-to-cpanel/github-clone.PNG" alt="github-clone" />
+{/* <!-- ![github-clone](images/deploy-laravel-inertia-to-cpanel/github-clone.png) --> */}
+
+Now, for everything to work properly, we should only share what's inside the public folder of the source code. For this case, it'll be inside sharestuff/public. There's mainly two approaches for this, either have public folder outside, and modify the .htaccess file , or let everything as it as, as suggested in laravel docs, and continue with the following steps.
+
+Update the working directory for the subdomain.
+<CustomImage src="https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/deploy-laravel-inertia-to-cpanel/subdomain-dir.PNG" alt="subdomain-dir" />
+{/* <!-- ![subdomain-dir](images/deploy-laravel-inertia-to-cpanel/subdomain-dir.png) --> */}
+
+Now, perform the basic laravel installation steps, like copying .env.example to .env, installing composer and npm packages, key generation, database configuration, linking storages, starting jobs and so on,  which I won't be showing here.
+
+Since I'm using Spatie Media library for all my media files in this project, and it happens to be using the default storage configurations, I need to run this command these commands in the given order.
+
+<CustomCode>
+```bash
+# Copy default env confs, and then modify the database confs, and more
+cp .env.example .env
+
+# Install composer packages
+composer install
+
+# Generate Application Key
+php artisan key:gen
+
+# Link the storage to public dir
+php artisan storage:link
+
+# Migrate and seed the data
+php artisan migrate:fresh --seed
+```
+</CustomCode>
+
+By this point, on visiting the domain, you should have something like this as respone,
+<CustomImage src="https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/deploy-laravel-inertia-to-cpanel/vite-error.PNG" alt="vite-error" />
+{/* <!-- ![vite-error](images/deploy-laravel-inertia-to-cpanel/vite-error.png) --> */}
+
+There are again two approaches to resolve this, 
+
+1. In your .gitignore file, comment /public/build line, and with every change in the frontend/react part, you've gotta run npm run build each time before pushing the changes to the git. I'd stick with this approach to keep the hassle to a minimum.
+2. For second approach, you've got to setup a node app in the cpanel and do the build process in the server as discussed below.
+
+Now, its time to setup the node application to build the the vite-react app of the frontend. So follow these steps:
+
+* Go to Setup Nodejs App in your cpanel.
+* Click on Create Application.
+* Set the node version as what was used for development, and application mode as production.
+* Set application root as the base laravel sourcecode directory.
+* Set application url as your domain or subdomain.
+* Set the routes/web.php as your startup file, because this is where inertia initiates its magic.
+* Click Create.
+* Now, once started, you gotta run npm install, so either click on it or, do it from the ssh or terminal by initiating the node virtual env.
+* Finaly, run the build script, or npm run build in the terminal.
+<CustomImage src="https://raw.githubusercontent.com/guts982/mdx-blogs/master/images/deploy-laravel-inertia-to-cpanel/ts-error.PNG" alt="ts-error" />
+  {/* <!-- ![ts-error](images/deploy-laravel-inertia-to-cpanel/ts-error.png) --> */}
+
+This, ts error is absolutely normal, if you followed along till now, to tackle this we've got 2 approaches.Either, put all your dev dependencies in your dependencies in package json, and update it in the server via git push and pull, or change the node env to development, and execute the npm install again, so that it installs typescript and all dev dependencies as well on the server, and finally run the build script. I'm gonna do the later one, the build is only ran once, everytime after the react/client code is updated, so the env can later be set back to prod.
+
+
+## Additional Tips
+
+While building the vite-inertia-typescript-react project, if you encounter any build error that is not related to your source code, make sure to look into your tsconfig.json file for a solution. For example, in my case, I was using a package called @nextui-org/react, which gave me a hefty build errors, and the solution was to add "skipLibCheck":true, to the tsconfig file. You just have to make sure to remove all the build errors in dev env, that's all.
